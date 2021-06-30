@@ -4,11 +4,59 @@
 <title></title>
 <meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1'>
+<!-- UIkit CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.6.22/dist/css/uikit.min.css" />
+<link rel='stylesheet' href='/assets/css/homepage.css'>
 
+<!-- UIkit JS -->
+<script src="https://cdn.jsdelivr.net/npm/uikit@3.6.22/dist/js/uikit.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/uikit@3.6.22/dist/js/uikit-icons.min.js"></script>
+
+<!--FA icons-->
+<script src="https://kit.fontawesome.com/50fbfc41d7.js" crossorigin="anonymous"></script>
+
+<!--Googe fonts-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Allura&display=swap" rel="stylesheet">
+<!--Scripts-->
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.24.min.js"></script>
 </head>
 
 <body>
-<h1>Hello</h1>
+<div id='bg'>
+    <div id='fg'>
+        <div id='main' class='uk-position-center '>
+            <div id='logo' class='uk-flex uk-flex-middle uk-flex-between'>
+                <a id='logo-link' href='/'>Starfile</a>
+                <div id='links'>
+                    <a href="/" class='fas fa-question-circle fa-lg' ></a>
+                    <a href='/' class='fas fa-envelope fa-lg'></a>
+                    <a href='/' class='fab fa-discord fa-lg'></a>
+                </div>
+            </div>
+            <div id='upload' class='uk-flex uk-flex-column uk-flex-middle uk-border-rounded'>
+                <div id='file-data' class='uk-flex uk-flex-center uk-flex-top'>
+                <i class='fas fa-file-pdf fa-3x'></i>
+                <div id='text-data' class='uk-flex uk-flex-column '>
+                <p id='file-name'>No file selected<br><span id='file-size'>No size</span></p>
+                
+                </div>
+                </div>
+                <label for='upload-input' id='up-label' class="uk-flex uk-flex-center uk-flex-middle" onclick="this.control.value=null;">
+                    Select a file<i class='fas fa-upload fa-lg'></i>
+                    <input type='file' id='upload-input'></p>
+                </label>
+                </div>
+                <div id='confirm'>
+                    <button class="uk-button uk-button-default" id='upload-button' disabled>Upload</button>
+                    <button class="uk-button uk-button-default"  id='cancel-button'>Cancel</button>
+                </div>
+        </div>
+    </div>
+</div>
+<script src='/assets/js/homepage.js'></script>
+<script src='/assets/js/aws.js'></script>
 </body>
 
 </html>
