@@ -1,31 +1,42 @@
-//Bucket Configurations
-let bucketName = 'fhostbucket';
-let bucketRegion = 'us-east-1';
-let IdentityPoolId = 'us-east-1:45bec6e6-713f-4f35-a742-a029737913a9';
+//Bucket Configurations'
+const ENDPOINT_URL = "https://s3.pilw.io"
 
-
-
-  
-  // Create and upload the object to the specified Amazon S3 bucket.
-  const s3Upload = async (file) => {
-    const bucketParams = {
-        Bucket: bucketName,
-        // Specify the name of the new object. For example, 'index.html'.
-        // To create a directory for the object, use '/'. For example, 'myApp/package.json'.
-        Key: `userfiles/${file.name}`,
-        // Content of the new object.
-        Body: file,
-      };
-
-    try {
-      const data = await s3Client.send(new PutObjectCommand(bucketParams));
-      console.log(
-        "Successfully uploaded object: " +
-          bucketParams.Bucket +
-          "/" +
-          bucketParams.Key
-      );
-    } catch (err) {
-      console.log("Error", err);
-    }
-  };
+ 
+async function getCredentials(){
+  const response = await fetch('/credentials')
+  const data = await response.json()
+  const result={
+    ACCESS_KEY_ID : data['access_key'],
+    ACCESS_KEY_SECRET : data['secret_key'],
+    BUCKET_NAME : data['bucket']
+  }
+  return result
+}
+ 
+ 
+const s3Upload = function(file) {
+  getCredentials().then((keys)=>{
+    const bucket = new AWS.S3({
+      accessKeyId: keys['ACCESS_KEY_ID'],
+      secretAccessKey: keys['ACCESS_KEY_SECRET'],
+      endpoint: new AWS.Endpoint(ENDPOINT_URL),
+      params: {
+          Bucket: keys['BUCKET_NAME']
+      }
+  })
+  const params = {
+    Key: 'userfiles/' + file.name,
+    ContentType: file.type,
+    Body: file,
+    ACL: 'public-read'
+}
+  bucket.putObject(params, function(err, data) {
+      if (err) {
+          results.innerHTML = 'ERROR: ' + err;
+          return
+      }
+})
+  })
+    
+}
+ 

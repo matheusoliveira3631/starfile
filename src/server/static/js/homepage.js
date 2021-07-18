@@ -34,5 +34,11 @@ function reset(){
     uploadButton.disabled=true
 }
 
+function submit(){
+    const form=document.getElementById('upload-form')
+    form.submit()
+}
+
 inputElement.addEventListener("change", handleFiles, false);
 cancelButton.addEventListener('click', reset, false);
+uploadButton.addEventListener('click', submit, false);

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 
 #not sure if i'm gonna need this, uploading through js sounds like a good idea
-def upload_file(file_name, bucket, object_name, keys={}):
+def aws_upload(file_name, bucket, object_name, keys={}):
     # If S3 object_name was not specified, use file_name
     if object_name is None:
         object_name = file_name
@@ -23,7 +23,7 @@ def upload_file(file_name, bucket, object_name, keys={}):
     return True
 
 
-def get_file_url(file_name ,bucket, keys={}):
+def get_file_url(filename ,bucket, keys={}):
    client: boto3.s3 = boto3.client(
      's3',
      aws_access_key_id=keys['access_key'],
@@ -31,10 +31,18 @@ def get_file_url(file_name ,bucket, keys={}):
    )
 
    return client.generate_presigned_url('get_object',
-                                     Params={'Bucket': bucket, 'Key': file_name},
+                                     Params={'Bucket': bucket, 'Key': filename},
                                      ExpiresIn=60)
 
-
+def get_presigned_url(filename, keys={}):
+    key=f"userfiles/{filename}"
+    url = boto3.client('s3',aws_access_key_id=keys['access_key'],
+                        aws_secret_access_key=keys['secret_key']
+                        ).generate_presigned_url(
+                        ClientMethod='put_object', 
+                        Params={'Bucket': keys['bucket'], 'Key': key},
+                        ExpiresIn=300)
+    return url
 
 
 

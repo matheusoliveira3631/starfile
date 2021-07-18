@@ -1,0 +1,74 @@
+body{
+    color: rgba(255,255,255,.4) 
+  }
+  
+  i{
+    margin: 0px 10px;
+  }
+  
+  
+  @keyframes fade{
+    from{
+      color: white;
+    }
+    to{
+      color: rgba(255,255,255,.4);
+    }
+  }
+  
+  @keyframes enlarge{
+    from{
+      font-size: auto;
+    }
+    to{
+      font-size: xx-large;
+    }
+  }
+  
+  .frame{
+    padding: 75px 150px;
+    background-color: rgba(0, 0, 0, .2);
+    border: .5px solid rgba(255,255,255,.1)
+  }
+
+  #bg{
+      background-image: url('/assets/images/bg.png');
+      background-repeat: no-repeat;
+      background-size:cover;
+      height:100vh;
+      width:100vw;
+    }
+    
+  #fg{
+      height: inherit;
+      width: inherit;
+      background-color: rgba(0, 0, 0, .25);
+      position: relative;
+    }
+
+    #main{
+      flex: 1 1 0px;
+    }
+    
+    #logo-link{
+      color:white;
+      text-decoration: none;
+      font-family: 'Allura', cursive;
+      font-size: 400%;
+    }
+    
+    #logo-link:hover{
+      animation: .2s fade;
+      animation-fill-mode: forwards;
+    }
+    
+    #links a{
+      color: rgba(255,255,255,.4);
+      margin: 0px 5px;
+      text-decoration: none;
+    }
+    
+    #links a:hover{
+      animation: .2s enlarge;
+      animation-fill-mode: forwards;
+    }

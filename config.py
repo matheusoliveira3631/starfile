@@ -1,3 +1,5 @@
+import os
+
 class Config(object):
     pass
 
@@ -7,7 +9,7 @@ class devConfig(Config):
 
     @property
     def UPLOAD_FOLDER(self):
-        return self.app.root_path 
+        return os.path.join(self.app.root_path, 'userUploads') 
     ENV = 'development'
     DEBUG = True
     
