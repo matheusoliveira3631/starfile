@@ -45,9 +45,11 @@ def fileUpload(request):
         try:
             file_id=file_register(filename)
             aws_upload(filePath, BUCKET_NAME, f'userfiles/{file_id}.{fileFormat}', keys=keys)
+            return render_template('post.html', id=f'{file_id}.{fileFormat}')
         except EnvironmentError as err:
             print(err)
-        return render_template('post.html', id=f'{file_id}.{fileFormat}')
+            return render_template('error.html')
     except EnvironmentError as err:
         print(err)
+        return render_template('error.html')
 
