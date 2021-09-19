@@ -1,7 +1,8 @@
 import os
-from botocore.retries import bucket
+from threading import Thread
 
-from flask import request
+from botocore.retries import bucket
+import flask
 from flask import redirect
 from dotenv import load_dotenv
 from flask.templating import render_template;load_dotenv()
@@ -41,11 +42,14 @@ def fileUpload(request):
         filename = secure_filename(file.filename)
         filePath=os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         fileFormat=filename.split('.')[-1]
-        file.save(filePath)
+        if os.path.isfile(filePath):
+            pass
+        else:
+            file.save(filePath)
         try:
             file_id=file_register(filename)
-            aws_upload(filePath, BUCKET_NAME, f'userfiles/{file_id}.{fileFormat}', keys=keys)
-            return render_template('post.html', id=f'{file_id}.{fileFormat}')
+            Thread(target=aws_upload, args=(filePath, BUCKET_NAME, f'userfiles/{file_id}.{fileFormat}'), kwargs={'keys':keys}).start()
+            return render_template('post.html', link=f'{flask.request.url_root}file/{file_id}.{fileFormat}')
         except EnvironmentError as err:
             print(err)
             return render_template('error.html')

@@ -20,6 +20,7 @@ def aws_upload(file_name, bucket, object_name, keys={}):
     except ClientError as e:
         logging.error(e)
         return False
+    print('Done uploading')
     return True
 
 
