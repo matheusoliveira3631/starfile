@@ -40,7 +40,10 @@ def fileUpload(request):
     try:
         file = request.files['file']
         filename = secure_filename(file.filename)
-        filePath=os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        if os.path.isdir(current_app.config['UPLOAD_FOLDER']):
+            filePath=os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        else:
+            os.mkdir(current_app.config['UPLOAD_FOLDER'])
         fileFormat=filename.split('.')[-1]
         if os.path.isfile(filePath):
             pass
