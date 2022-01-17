@@ -14,6 +14,12 @@ class devConfig(Config):
     DEBUG = True
     
 class productionConfig(Config):
+    def __init__(self, app):
+        self.app=app
+
+    @property
+    def UPLOAD_FOLDER(self):
+        return os.path.join(self.app.root_path, 'userUploads') 
     ENV= 'production'
     DEBUG= False
     

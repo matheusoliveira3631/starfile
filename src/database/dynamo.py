@@ -3,9 +3,9 @@ import os
 import boto3
 from dotenv import load_dotenv; load_dotenv()
 
-ACCESS_KEY=os.environ['aws_access_key']
-SECRET_KEY=os.environ['aws_secret_key']
-region_name=os.environ['aws_region_name']
+ACCESS_KEY=os.environ['AWS_ACCESS_KEY']
+SECRET_KEY=os.environ['AWS_SECRET_KEY']
+region_name=os.environ['AWS_REGION_NAME']
 
 def register_file(filename, file_id):
     client = boto3.resource('dynamodb', aws_access_key_id=ACCESS_KEY, 

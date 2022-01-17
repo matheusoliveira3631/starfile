@@ -44,6 +44,7 @@ def fileUpload(request):
             filePath=os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         else:
             os.mkdir(current_app.config['UPLOAD_FOLDER'])
+            filePath=os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         fileFormat=filename.split('.')[-1]
         if os.path.isfile(filePath):
             pass
