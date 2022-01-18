@@ -31,7 +31,7 @@ jobs:
           
       # Step 5
       - name: Build Application and Run unit Test
-        run: python app.py & pytest
+        run: python app.py & python -m pytest -v
         env:
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
