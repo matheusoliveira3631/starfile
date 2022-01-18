@@ -32,6 +32,11 @@ jobs:
       # Step 5
       - name: Build Application and Run unit Test
         run: python app.py & pytest
+        env:
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION_NAME: us-east-1
+          AWS_BUCKET_NAME: fhostbucket
 
   continuous-deployment:
     runs-on: ubuntu-latest
