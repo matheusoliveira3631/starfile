@@ -62,4 +62,5 @@ jobs:
             --application-name starfile \
             --deployment-group-name ec2_codedeploy \
             --deployment-config-name CodeDeployDefault.OneAtATime \
-            --github-location repository=${{ github.repository }},commitId=${{ github.sha }}
+            --github-location repository=${{ github.repository }},commitId=${{ github.sha }} \
+            --ignore-application-stop-failures
