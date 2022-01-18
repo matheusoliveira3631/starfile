@@ -3,9 +3,8 @@ from threading import Thread
 
 from botocore.retries import bucket
 import flask
-from flask import redirect
-from dotenv import load_dotenv
-from flask.templating import render_template;load_dotenv()
+from flask import redirect 
+from flask.templating import render_template
 from flask.globals import current_app
 from werkzeug.utils import secure_filename
 

@@ -3,7 +3,7 @@ import os
 
 import boto3
 from botocore.exceptions import ClientError
-from dotenv import load_dotenv
+
 
 
 #not sure if i'm gonna need this, uploading through js sounds like a good idea

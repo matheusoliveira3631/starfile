@@ -1,7 +1,7 @@
 import os
 
 import boto3
-from dotenv import load_dotenv; load_dotenv()
+
 
 ACCESS_KEY=os.environ['AWS_ACCESS_KEY']
 SECRET_KEY=os.environ['AWS_SECRET_KEY']
