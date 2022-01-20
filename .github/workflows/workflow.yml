@@ -54,5 +54,4 @@ jobs:
         run: ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
      # Step 3
       - name: Deploy with rsync
-        run: |
-        rsync -avzn ./dist/ ${{ secrets.USER }}@${{ secrets.HOST }}:/home/ubuntu/starfile2/dist/
+        run: rsync -avzn ./dist/ ${{ secrets.USER }}@${{ secrets.HOST }}:/home/ubuntu/starfile2/dist/
