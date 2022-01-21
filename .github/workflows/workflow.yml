@@ -53,17 +53,14 @@ jobs:
       - name: Adding Known Hosts
         run: ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
      # Step 3
-      - name: Sync
+      - name: Rsync
+        uses: AEnterprise/rsync-deploy@v1.0
         env:
-          dest: 'ubuntu@${{ secrets.HOST }}:/home/ubuntu/starfile2'
-        run: |
-          echo "${{secrets.RSA}}" > deploy_key
-          chmod 600 ./deploy_key
-          rsync -chav --delete \
-            -e 'ssh -i ./deploy_key -o StrictHostKeyChecking=no' \
-            --exclude /deploy_key \
-            --exclude /.git/ \
-            --exclude /.github/ \
-            --exclude /node_modules/ \
-            ./ ${{env.dest}}
+          DEPLOY_KEY: ${{ secrets.RSA }}
+          ARGS: "-e -c -r --delete"
+          SERVER_PORT: 22
+          FOLDER: "./"
+          SERVER_IP: ${{ secrets.HOST }}
+          USERNAME: ubuntu
+          SERVER_DESTINATION: /home/ubuntu/starfile2
     
