@@ -54,13 +54,21 @@ jobs:
         run: ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
      # Step 3
       - name: Rsync
-        uses: AEnterprise/rsync-deploy@v1.0
+        uses: up9cloud/action-rsync@v1.1
         env:
-          DEPLOY_KEY: ${{ secrets.RSA }}
-          ARGS: "-e -c -r --delete"
-          SERVER_PORT: 22
-          FOLDER: "./"
-          SERVER_IP: ${{ secrets.HOST }}
-          USERNAME: ubuntu
-          SERVER_DESTINATION: /home/ubuntu/starfile2
+          HOST: ${{ secrets.HOST }}
+          KEY: ${{ secrets.RSA }}
+          TARGET: /app/hello-service/
+
+          VERBOSE: true
+          USER: ubuntu
+          # PORT: 2222 # no need to set this, because of $SSH_ARGS
+          ARGS: -az --exclude=/.git/
+          SSH_ARGS: '-p 2222 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+          SOURCE: ./
+
+          PRE_SCRIPT: |
+            echo start at:
+            date -u
+          POST_SCRIPT: "echo done at: && date -u"
     
