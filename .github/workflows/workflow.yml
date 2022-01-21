@@ -58,7 +58,7 @@ jobs:
         env:
           HOST: ${{ secrets.HOST }}
           KEY: ${{ secrets.RSA }}
-          TARGET: /app/hello-service/
+          TARGET: /home/ubuntu/starfile2/
 
           VERBOSE: true
           USER: ubuntu
