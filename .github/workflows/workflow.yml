@@ -53,13 +53,12 @@ jobs:
       - name: Adding Known Hosts
         run: ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
      # Step 3
-      - name: Deploy over rsync
-        uses: trendyminds/github-actions-rsync@master
+      - name: Deploy with rsync
+        uses: BuildPC/rsync-with-ssh-github-actions@master
         with:
-          RSYNC_OPTIONS: -avzn --delete --exclude node_modules --exclude '.git*'
-          RSYNC_TARGET: /home/ubuntu/starfile2
-          RSYNC_SOURCE: /
-        env:
-          SSH_PRIVATE_KEY: ${{secrets.RSA}}
-          SSH_USERNAME: ${{secrets.USER}}
-          SSH_HOSTNAME: ${{secrets.HOST}}
+          key: ${{ secrets.RSA }}
+          host: ${{ secrets.HOST }}
+          port: 22
+          user: ubuntu
+          destination: /home/ubuntu/starfile2/
+    
