@@ -53,22 +53,12 @@ jobs:
       - name: Adding Known Hosts
         run: ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
      # Step 3
-      - name: Rsync
-        uses: up9cloud/action-rsync@v1.1
-        env:
-          HOST: ${{ secrets.HOST }}
-          KEY: ${{ secrets.RSA }}
-          TARGET: /home/ubuntu/starfile2/
-
-          VERBOSE: true
-          USER: ubuntu
-          # PORT: 2222 # no need to set this, because of $SSH_ARGS
-          ARGS: -az --exclude=/.git/
-          SSH_ARGS: '-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
-          SOURCE: ./
-
-          PRE_SCRIPT: |
-            echo start at:
-            date -u
-          POST_SCRIPT: "echo done at: && date -u"
+      - name: Cloning git via ssh
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: ${{ secrets.RSA }}
+          port: 22
+          script: starfile
     
