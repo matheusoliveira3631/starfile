@@ -6,12 +6,22 @@ from .controllers import homepage
 from .controllers import fileDownload
 from .controllers import file_register
 from .controllers import fileUpload
+from .controllers import gallery
+from .controllers import authenticate
 
 app = Blueprint('app', __name__)
 
 @app.route('/')
 def home():
     return homepage()
+
+@app.route('/gallery')
+def gal():
+    return gallery()
+
+@app.route('/auth', methods=['POST'])
+def auth():
+    return authenticate(request)
 
 @app.route('/file/<string:fileId>')
 def download(fileId):

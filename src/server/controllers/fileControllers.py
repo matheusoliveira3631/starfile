@@ -60,3 +60,20 @@ def fileUpload(request):
         print(err)
         return render_template('error.html')
 
+def galleryUpload(request):
+    try:
+        file = request.files['file']
+        filename = secure_filename(file.filename)
+        if os.path.isdir(current_app.config['GALLERY_FOLDER']):
+            filePath=os.path.join(current_app.config['GALLERY_FOLDER'], filename)
+        else:
+            os.mkdir(current_app.config['GALLERY_FOLDER'])
+            filePath=os.path.join(current_app.config['GALLERY_FOLDER'], filename)
+        fileFormat=filename.split('.')[-1]
+        if os.path.isfile(filePath):
+            pass
+        else:
+            file.save(filePath)
+    except EnvironmentError as err:
+        print(err)
+        return render_template('error.html')

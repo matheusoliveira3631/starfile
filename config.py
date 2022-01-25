@@ -10,6 +10,9 @@ class devConfig(Config):
     @property
     def UPLOAD_FOLDER(self):
         return os.path.join(self.app.root_path, 'userUploads') 
+    @property
+    def GALLERY_FOLDER(self):
+        return os.path.join(self.app.root_path, 'galleryUploads') 
     ENV = 'development'
     DEBUG = True
     
@@ -20,6 +23,9 @@ class productionConfig(Config):
     @property
     def UPLOAD_FOLDER(self):
         return os.path.join(self.app.root_path, 'userUploads') 
+    @property
+    def GALLERY_FOLDER(self):
+        return os.path.join(self.app.root_path, 'galleryUploads') 
     ENV= 'production'
     DEBUG= False
     
