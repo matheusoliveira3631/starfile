@@ -12,7 +12,7 @@ class devConfig(Config):
         return os.path.join(self.app.root_path, 'userUploads') 
     @property
     def GALLERY_FOLDER(self):
-        return os.path.join(self.app.root_path, 'galleryUploads') 
+        return os.path.join(self.app.root_path, 'src', 'server', 'static', 'images', 'galleryUploads') 
     ENV = 'development'
     DEBUG = True
     
@@ -25,7 +25,7 @@ class productionConfig(Config):
         return os.path.join(self.app.root_path, 'userUploads') 
     @property
     def GALLERY_FOLDER(self):
-        return os.path.join(self.app.root_path, 'galleryUploads') 
+        return os.path.join(self.app.root_path, 'src', 'server', 'static', 'images', 'galleryUploads') 
     ENV= 'production'
     DEBUG= False
     
