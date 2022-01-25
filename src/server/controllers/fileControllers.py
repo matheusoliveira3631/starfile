@@ -74,6 +74,7 @@ def galleryUpload(request):
             pass
         else:
             file.save(filePath)
+        return 'ok'
     except EnvironmentError as err:
         print(err)
         return render_template('error.html')

@@ -3,7 +3,7 @@ from flask.globals import request
 
 
 from .controllers import homepage
-from .controllers import fileDownload
+from .controllers import fileDownload, galleryUpload
 from .controllers import file_register
 from .controllers import fileUpload
 from .controllers import gallery
@@ -35,3 +35,7 @@ def fileRegister(filename):
 @app.route('/upload', methods=['POST'])
 def upload():
     return fileUpload(request)
+
+@app.route('/upload/image', methods=['POST'])
+def imgUpload():
+    return galleryUpload(request)

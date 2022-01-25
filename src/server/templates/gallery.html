@@ -22,11 +22,10 @@
 </head>
 
 <body>
+    <iframe id='fake-frame' name='fake-frame' style="display: none;"></iframe>
 <div id='bg'>
     <div id='fg'>
-        <div id="gallery-container" >
-            gallery
-        </div>
+        <div id='form-ct2'>
         <div id="form-container" style="display: none;">
             <p>Password:</p>
             <form>
@@ -34,6 +33,17 @@
                 <input id='button' type="submit" value="Send">
             </form>
         </div>
+    </div>
+    <div id='main'>
+        <form id='photo-form' action='/upload/image' method="POST" enctype="multipart/form-data" style="display: none;" target="fake-frame">
+            <input type='file' id='photo-upload' name='file'></form>
+            </form>
+        <div id="gallery-container" >
+            <div id='add-photo' class='gallery-element'>
+                <p>+</p>
+            </div>
+        </div>
+    </div>
     </div>
 </div>
 <script src="/assets/js/login.js"></script>

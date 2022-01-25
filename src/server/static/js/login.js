@@ -2,6 +2,9 @@ const button=document.getElementById('button');
 const form=document.getElementById('form-container');
 const gallery=document.getElementById('gallery-controller');
 const field=document.getElementById('field')
+const addPhoto=document.getElementById('add-photo')
+const photoForm=document.getElementById('photo-form')
+const photoButton=document.getElementById('photo-upload')
 
 const switchPanes = ()=>{
     form.style.display='none';
@@ -22,5 +25,11 @@ const auth = (eventObj)=>{
     })
 }
 
-
 button.addEventListener('click', auth);
+addPhoto.addEventListener('click', ()=>{
+    photoButton.click()
+})
+
+photoButton.onchange = ()=>{
+    photoForm.submit()
+}
