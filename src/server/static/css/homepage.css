@@ -9,10 +9,10 @@
 
 #confirm button{
   padding:5px 25px;
-  border: .5px solid #7F7F7F;
+  border: .5px solid white;
   background-color: rgba(0, 0, 0, .25);
   border-radius: 15px;
-  color: rgba(255,255,255,.4) !important
+  color: white;
 }
 
 #confirm button[disabled]{
@@ -32,7 +32,8 @@
 #up-label{
   cursor: pointer;
   padding:10px 20px;
-  border: .5px solid #7F7F7F;
+  color: white;
+  border: .5px solid white;
   background-color: rgba(0, 0, 0, .25);
   border-radius: 15px;
 }
