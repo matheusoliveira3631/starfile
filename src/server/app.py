@@ -1,30 +1,21 @@
 from flask import Blueprint
 from flask.globals import request
+from flask import render_template
 
-
-from .controllers import homepage
-from .controllers import fileDownload
-from .controllers import file_register
-from .controllers import fileUpload
-
+from .controllers import fileController
 
 app = Blueprint('app', __name__)
 
 @app.route('/')
-def home():
-    return homepage()
+def homepage():
+    return render_template('homepage.html')
 
 
 @app.route('/file/<string:fileId>')
 def download(fileId):
-    return fileDownload(fileId)
-
-@app.route('/register/<string:filename>', methods=['POST'])
-def fileRegister(filename):
-    return file_register(filename)
-
+    return fileController().fileDownload(fileId)
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    return fileUpload(request)
+    return fileController().fileUpload(request)
 

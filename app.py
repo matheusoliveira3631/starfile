@@ -1,9 +1,11 @@
+import sys;sys.path.append("..")#trabalho bem feito = inveja pesada
 import os
+
 
 from flask import Flask
 
+from config import productionConfig, devConfig
 from src import app
-from config import devConfig, productionConfig
 
 TEMPLATES_FOLDER=os.path.join(os.getcwd(), 'src', 'server', 'templates')
 STATICS_FOLDER=os.path.join(os.getcwd(), 'src', 'server', 'static')

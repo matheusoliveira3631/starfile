@@ -140,3 +140,4 @@ cython_debug/
 #user upload folder
 userUploads/
 galleryUploads/
+files.json
