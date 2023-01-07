@@ -1,6 +1,7 @@
 import sys;sys.path.append("..")#trabalho bem feito = inveja pesada
 import os
-
+import time 
+from threading import Thread
 
 from flask import Flask
 

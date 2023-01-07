@@ -19,7 +19,7 @@ jobs:
         run: pip install -r requirements.txt          
       # Step 4
       - name: Build Application #and Run unit Test
-        run: python app.py #& python -m pytest -v
+        run: timeout 30 python app.py #& python -m pytest -v
 
   Deploy:
     runs-on: ubuntu-latest
