@@ -16,27 +16,10 @@ jobs:
           python-version: 3.7
       # Step 3
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt          
       # Step 4
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-          #role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          #role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
-          #role-duration-seconds: 1200
-          #role-session-name: MySessionName
-          
-      # Step 5
       - name: Build Application and Run unit Test
         run: python app.py & python -m pytest -v
-        env:
-          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION_NAME: us-east-1
-          AWS_BUCKET_NAME: fhostbucket
 
   Deploy:
     runs-on: ubuntu-latest
@@ -57,8 +40,8 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
-          username: ubuntu
+          username: Dr3amsavior
           key: ${{ secrets.RSA }}
           port: 22
-          script: starfile
+          script: rm -rf starfile/ && git clone git@github.com:matheusoliveira3631/starfile.git && sudo pip install -r starfile/requirements.txt && sudo systemctl restart starfile.service
     
