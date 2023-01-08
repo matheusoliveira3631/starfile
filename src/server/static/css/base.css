@@ -42,7 +42,7 @@ body{
   #fg{
       height: inherit;
       width: inherit;
-      background-color: rgba(0, 0, 0);
+      background-color: rgba(0, 0, 0, .25);
       position: relative;
     }
 
