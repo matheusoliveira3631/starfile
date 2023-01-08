@@ -43,5 +43,5 @@ jobs:
           username: Dr3amsavior
           key: ${{ secrets.RSA }}
           port: 22
-          script: rm -rf starfile/ && git clone git@github.com:matheusoliveira3631/starfile.git && sudo pip install -r starfile/requirements.txt && sudo systemctl restart starfile.service
+          script: sudo rm -rf starfile/ && sudo git clone git@github.com:matheusoliveira3631/starfile.git && sudo pip install -r starfile/requirements.txt && sudo systemctl restart starfile.service
       
