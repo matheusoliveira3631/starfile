@@ -41,7 +41,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: Dr3amsavior
-          password: ${{ secrets.PASSWORD }}
+          key: ${{ secrets.RSA }}
           port: 22
           script: rm -rf starfile/ && git clone git@github.com:matheusoliveira3631/starfile.git && sudo pip install -r starfile/requirements.txt && sudo systemctl restart starfile.service
       
