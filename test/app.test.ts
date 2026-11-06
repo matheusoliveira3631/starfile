@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { testApp } from './helpers.js';
 
-const app = testApp();
+const { app } = testApp();
 afterAll(() => app.close());
 
 describe('GET /health', () => {
