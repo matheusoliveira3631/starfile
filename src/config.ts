@@ -13,6 +13,14 @@ const schema = z.object({
 
   MAX_UPLOAD_MB: z.coerce.number().int().positive().max(5120).default(25),
   UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(300),
+
+  // Base dos links públicos (/s/:token). Em produção, o domínio da API.
+  PUBLIC_BASE_URL: z.url().default('http://localhost:3000'),
+  FILE_RETENTION_DAYS: z.coerce.number().int().positive().max(365).default(30),
+  LINK_MAX_TTL_HOURS: z.coerce.number().int().positive().default(168),
+  // Vida da URL assinada do S3 depois do redirect. Curta de propósito: quem tem o link
+  // pede outra, e uma URL vazada em log ou histórico morre logo.
+  DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
 });
 
 export type Config = z.infer<typeof schema>;
@@ -26,3 +34,4 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 }
 
 export const maxUploadBytes = (config: Config) => config.MAX_UPLOAD_MB * 1024 * 1024;
+export const fileRetentionSeconds = (config: Config) => config.FILE_RETENTION_DAYS * 24 * 60 * 60;

@@ -75,7 +75,6 @@ export const uploadRoutes: FastifyPluginAsync<Options> = async (app, { config, f
     if (!record) {
       return reply.code(404).send({ error: 'not_found', message: 'Arquivo não encontrado' });
     }
-    const { expiresAt: _expiresAt, ...publicFields } = record;
-    return publicFields;
+    return { ...record, expiresAt: new Date(record.expiresAt * 1000).toISOString() };
   });
 };

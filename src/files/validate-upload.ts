@@ -17,11 +17,12 @@ interface Deps {
   files: FileRepository;
   storage: FileStorage;
   log: Logger;
+  retentionSeconds: number;
 }
 
 // O Content-Type do upload é o que o cliente declarou, então não prova nada.
 // Aqui o arquivo já está no S3 (em pending/) e a gente confere o conteúdo de verdade.
-export async function validateUpload(key: string, { files, storage, log }: Deps): Promise<ValidationResult> {
+export async function validateUpload(key: string, { files, storage, log, retentionSeconds }: Deps): Promise<ValidationResult> {
   const id = idFromPendingKey(key);
   if (!id) {
     await storage.delete(key);
@@ -52,7 +53,7 @@ export async function validateUpload(key: string, { files, storage, log }: Deps)
   }
 
   await storage.move(key, storedKey(id));
-  await files.markReady(id);
+  await files.markReady(id, Math.floor(Date.now() / 1000) + retentionSeconds);
   log.info({ fileId: id }, 'upload validado');
   return { outcome: 'ready', id };
 }

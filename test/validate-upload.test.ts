@@ -9,7 +9,7 @@ import { EXE, PDF, PNG, TEXT } from './samples.js';
 let files: InMemoryFiles;
 let storage: InMemoryStorage;
 const log = pino({ level: 'silent' });
-const run = (key: string) => validateUpload(key, { files, storage, log });
+const run = (key: string) => validateUpload(key, { files, storage, log, retentionSeconds: 3600 });
 
 beforeEach(() => {
   files = new InMemoryFiles();
@@ -42,8 +42,9 @@ describe('validateUpload', () => {
     expect(await run(pendingKey(id))).toEqual({ outcome: 'ready', id });
     expect(storage.objects.has(pendingKey(id))).toBe(false);
     expect(storage.objects.get(storedKey(id))).toEqual(bytes);
-    expect(files.records.get(id)).toMatchObject({ status: 'ready' });
-    expect(files.records.get(id)).not.toHaveProperty('expiresAt');
+    const record = files.records.get(id);
+    expect(record?.status).toBe('ready');
+    expect(record?.expiresAt).toBeCloseTo(Date.now() / 1000 + 3600, -1);
   });
 
   it('rejeita executável declarado como PNG', async () => {
