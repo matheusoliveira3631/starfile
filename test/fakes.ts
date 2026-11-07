@@ -1,5 +1,6 @@
 import type { FileRecord, FileRepository } from '../src/files/repository.js';
-import type { CreateUploadInput, FileStorage } from '../src/files/storage.js';
+import type { CreateUploadInput, DownloadUrlInput, FileStorage } from '../src/files/storage.js';
+import type { LinkRecord, LinkRepository } from '../src/links/repository.js';
 
 export class InMemoryFiles implements FileRepository {
   readonly records = new Map<string, FileRecord>();
@@ -14,10 +15,10 @@ export class InMemoryFiles implements FileRepository {
     return record ? { ...record } : null;
   }
 
-  async markReady(id: string) {
+  async markReady(id: string, expiresAt: number) {
     return this.transition(id, (r) => {
       r.status = 'ready';
-      delete r.expiresAt;
+      r.expiresAt = expiresAt;
     });
   }
 
@@ -45,6 +46,10 @@ export class InMemoryStorage implements FileStorage {
     return { url: 'https://bucket.example/', fields: { key: input.key, 'Content-Type': input.contentType } };
   }
 
+  async downloadUrl({ key, filename, expiresIn }: DownloadUrlInput) {
+    return `https://bucket.example/${key}?name=${encodeURIComponent(filename)}&expires=${String(expiresIn)}`;
+  }
+
   async head(key: string) {
     const object = this.objects.get(key);
     return object ? { size: object.byteLength } : null;
@@ -63,5 +68,36 @@ export class InMemoryStorage implements FileStorage {
 
   async delete(key: string) {
     this.objects.delete(key);
+  }
+}
+
+export class InMemoryLinks implements LinkRepository {
+  readonly records = new Map<string, LinkRecord>();
+
+  async create(link: LinkRecord) {
+    this.records.set(link.linkId, { ...link });
+  }
+
+  async findByTokenHash(tokenHash: string) {
+    const link = [...this.records.values()].find((l) => l.tokenHash === tokenHash);
+    return link ? { ...link } : null;
+  }
+
+  async listByFile(fileId: string) {
+    return [...this.records.values()].filter((l) => l.fileId === fileId).map((l) => ({ ...l }));
+  }
+
+  async delete(fileId: string, linkId: string) {
+    const link = this.records.get(linkId);
+    if (link?.fileId !== fileId) return false;
+    return this.records.delete(linkId);
+  }
+
+  async consume(fileId: string, linkId: string, now: number) {
+    const link = this.records.get(linkId);
+    if (link?.fileId !== fileId || link.expiresAt <= now) return false;
+    if (link.maxDownloads !== undefined && link.downloads >= link.maxDownloads) return false;
+    link.downloads += 1;
+    return true;
   }
 }

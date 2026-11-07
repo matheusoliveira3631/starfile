@@ -12,15 +12,17 @@ export interface FileRecord {
   status: FileStatus;
   rejectReason?: string;
   createdAt: string;
-  // TTL do DynamoDB (epoch em segundos). Upload que nunca chegou some sozinho.
-  expiresAt?: number;
+  // Epoch em segundos, usado como TTL do DynamoDB. Pendente: 24h pra o upload chegar.
+  // Pronto: fim da retenção do arquivo. O TTL do DynamoDB pode demorar até 48h pra apagar,
+  // então quem lê o registro também confere esse campo.
+  expiresAt: number;
 }
 
 export interface FileRepository {
   create(record: FileRecord): Promise<void>;
   get(id: string): Promise<FileRecord | null>;
   /** Retorna false se o arquivo não estava mais pendente. */
-  markReady(id: string): Promise<boolean>;
+  markReady(id: string, expiresAt: number): Promise<boolean>;
   markRejected(id: string, reason: string): Promise<boolean>;
 }
 
@@ -49,15 +51,15 @@ export class DynamoFileRepository implements FileRepository {
     return record as FileRecord;
   }
 
-  markReady(id: string) {
-    return this.transition(id, 'SET #status = :next REMOVE expiresAt', { ':next': 'ready' });
+  markReady(id: string, expiresAt: number) {
+    return this.transition(id, 'SET #status = :next, expiresAt = :expiresAt', { ':next': 'ready', ':expiresAt': expiresAt });
   }
 
   markRejected(id: string, reason: string) {
     return this.transition(id, 'SET #status = :next, rejectReason = :reason', { ':next': 'rejected', ':reason': reason });
   }
 
-  private async transition(id: string, update: string, values: Record<string, string>) {
+  private async transition(id: string, update: string, values: Record<string, string | number>) {
     try {
       await this.client.send(
         new UpdateCommand({
