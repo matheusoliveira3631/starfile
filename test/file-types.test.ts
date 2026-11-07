@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { contentDisposition } from '../src/files/storage.js';
 import { extensionMatches, sanitizeFilename } from '../src/files/file-types.js';
 
 describe('sanitizeFilename', () => {
@@ -26,5 +27,18 @@ describe('extensionMatches', () => {
     expect(extensionMatches('script.exe', 'image/png')).toBe(false);
     expect(extensionMatches('foto.png.exe', 'image/png')).toBe(false);
     expect(extensionMatches('png', 'image/png')).toBe(false);
+  });
+});
+
+describe('contentDisposition', () => {
+  it('força download e preserva o nome em UTF-8', () => {
+    expect(contentDisposition('relatório (final).pdf')).toBe(
+      `attachment; filename="relatorio (final).pdf"; filename*=UTF-8''relat%C3%B3rio%20%28final%29.pdf`,
+    );
+  });
+
+  it('usa fallback quando o nome não tem nada ASCII', () => {
+    expect(contentDisposition('日本.txt')).toMatch(/^attachment; filename="\.txt"/);
+    expect(contentDisposition('日本')).toMatch(/^attachment; filename="arquivo"/);
   });
 });

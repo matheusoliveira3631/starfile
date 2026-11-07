@@ -7,6 +7,7 @@ import {
   type S3Client,
 } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export interface UploadForm {
   url: string;
@@ -20,8 +21,16 @@ export interface CreateUploadInput {
   expiresIn: number;
 }
 
+export interface DownloadUrlInput {
+  key: string;
+  filename: string;
+  contentType: string;
+  expiresIn: number;
+}
+
 export interface FileStorage {
   createUpload(input: CreateUploadInput): Promise<UploadForm>;
+  downloadUrl(input: DownloadUrlInput): Promise<string>;
   head(key: string): Promise<{ size: number } | null>;
   readStart(key: string, bytes: number): Promise<Uint8Array>;
   move(from: string, to: string): Promise<void>;
@@ -49,6 +58,21 @@ export class S3FileStorage implements FileStorage {
     });
   }
 
+  // Sempre "attachment": o navegador baixa em vez de abrir, então nem um arquivo
+  // que passou na validação consegue rodar script no domínio do bucket.
+  async downloadUrl({ key, filename, contentType, expiresIn }: DownloadUrlInput) {
+    return getSignedUrl(
+      this.client,
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ResponseContentDisposition: contentDisposition(filename),
+        ResponseContentType: contentType,
+      }),
+      { expiresIn },
+    );
+  }
+
   async head(key: string) {
     try {
       const res = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
@@ -74,4 +98,11 @@ export class S3FileStorage implements FileStorage {
   async delete(key: string) {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
+}
+
+// filename= com fallback ASCII pra navegador velho, filename*= (RFC 5987) com o nome real em UTF-8.
+export function contentDisposition(filename: string): string {
+  const ascii = filename.normalize('NFKD').replace(/[^\x20-\x7e]/g, '').replace(/["\\]/g, '') || 'arquivo';
+  const encoded = encodeURIComponent(filename).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`;
 }

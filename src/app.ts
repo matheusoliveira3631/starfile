@@ -4,12 +4,15 @@ import { createAwsClients } from './aws.js';
 import { loadConfig, type Config } from './config.js';
 import { DynamoFileRepository, type FileRepository } from './files/repository.js';
 import { S3FileStorage, type FileStorage } from './files/storage.js';
+import { DynamoLinkRepository, type LinkRepository } from './links/repository.js';
 import { loggerOptions } from './logger.js';
 import { healthRoutes } from './routes/health.js';
+import { linkRoutes } from './routes/links.js';
 import { uploadRoutes } from './routes/uploads.js';
 
 export interface AppDeps {
   files: FileRepository;
+  links: LinkRepository;
   storage: FileStorage;
 }
 
@@ -17,6 +20,7 @@ export function defaultDeps(config: Config): AppDeps {
   const { s3, dynamo } = createAwsClients(config);
   return {
     files: new DynamoFileRepository(dynamo, config.TABLE_NAME),
+    links: new DynamoLinkRepository(dynamo, config.TABLE_NAME),
     storage: new S3FileStorage(s3, config.BUCKET_NAME),
   };
 }
@@ -49,6 +53,7 @@ export function buildApp(config: Config = loadConfig(), deps: AppDeps = defaultD
 
   void app.register(healthRoutes);
   void app.register(uploadRoutes, { config, ...deps });
+  void app.register(linkRoutes, { config, ...deps });
 
   return app;
 }
