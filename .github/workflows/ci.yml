@@ -1,7 +1,10 @@
 name: CI
 
+# Push só na master; o resto passa por PR. Com push em toda branch, cada commit
+# de um PR rodaria duas vezes (uma pelo push, outra pelo pull_request).
 on:
   push:
+    branches: [master]
   pull_request:
   workflow_dispatch:
 

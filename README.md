@@ -111,7 +111,7 @@ Contexto aceito: `stage` (fora de `prod`, bucket e tabela são apagados junto co
 
 ## CI e deploy
 
-Em todo push, o [CI](.github/workflows/ci.yml) roda lint, typecheck, testes de unidade, `npm audit` e `cdk synth`, que já gera os bundles das Lambdas. Num job separado roda os testes de integração contra o LocalStack, com a checagem de assinatura do S3 ligada. Sem ela, o LocalStack aceita URL vencida ou adulterada e os testes de expiração passam sem provar nada.
+Em todo PR e em todo push na `master`, o [CI](.github/workflows/ci.yml) roda lint, typecheck, testes de unidade, `npm audit` e `cdk synth`, que já gera os bundles das Lambdas. Num job separado roda os testes de integração contra o LocalStack, com a checagem de assinatura do S3 ligada. Sem ela, o LocalStack aceita URL vencida ou adulterada e os testes de expiração passam sem provar nada.
 
 Quando o CI passa na `master`, o [deploy](.github/workflows/deploy.yml) faz `cdk deploy` em produção sem nenhuma chave da AWS guardada no GitHub. O job pede um token OIDC ao GitHub e troca por credenciais temporárias de um papel IAM, que só aceita tokens deste repositório no environment `production`. O papel não mexe em recurso nenhum diretamente, só assume os papéis criados pelo `cdk bootstrap`.
 
