@@ -20,6 +20,7 @@ async function uploaded(contentType: AllowedType, bytes: Uint8Array, declaredSiz
   const id = newFileId();
   await files.create({
     id,
+    ownerId: 'alice',
     filename: 'arquivo',
     contentType,
     size: declaredSize,

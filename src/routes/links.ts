@@ -2,16 +2,22 @@ import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { Config } from '../config.js';
 import { isFileId, storedKey } from '../files/ids.js';
-import type { FileRepository } from '../files/repository.js';
+import type { FileRecord, FileRepository } from '../files/repository.js';
 import type { FileStorage } from '../files/storage.js';
 import type { LinkRecord, LinkRepository } from '../links/repository.js';
 import { hashLinkToken, isLinkId, isLinkToken, newLinkId, newLinkToken } from '../links/tokens.js';
+import { rateLimit } from '../rate-limit/hook.js';
+import type { RateLimiter } from '../rate-limit/limiter.js';
 
 interface Options {
   config: Config;
   files: FileRepository;
   links: LinkRepository;
   storage: FileStorage;
+}
+
+interface PublicOptions extends Options {
+  limiter: RateLimiter;
 }
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
@@ -32,7 +38,11 @@ function publicLink(link: LinkRecord, now: number) {
   };
 }
 
-export const linkRoutes: FastifyPluginAsync<Options> = async (app, { config, files, links, storage }) => {
+// Arquivo de outra pessoa responde igual a arquivo inexistente.
+const owned = (file: FileRecord | null, ownerId: string) => (file?.ownerId === ownerId ? file : null);
+
+// Rotas de quem é dono do arquivo. Precisam de API key.
+export const linkRoutes: FastifyPluginAsync<Options> = async (app, { config, files, links }) => {
   const createBody = z
     .object({
       expiresInHours: z.number().int().min(1).max(config.LINK_MAX_TTL_HOURS).default(24),
@@ -47,7 +57,7 @@ export const linkRoutes: FastifyPluginAsync<Options> = async (app, { config, fil
       return reply.code(400).send({ error: 'invalid_body', message: z.prettifyError(parsed.error) });
     }
 
-    const file = isFileId(id) ? await files.get(id) : null;
+    const file = owned(isFileId(id) ? await files.get(id) : null, request.ownerId);
     const now = nowSeconds();
     if (!file || file.expiresAt <= now) return notFound(reply);
     if (file.status !== 'ready') {
@@ -72,7 +82,7 @@ export const linkRoutes: FastifyPluginAsync<Options> = async (app, { config, fil
 
   app.get<{ Params: { id: string } }>('/files/:id/links', async (request, reply) => {
     const { id } = request.params;
-    const file = isFileId(id) ? await files.get(id) : null;
+    const file = owned(isFileId(id) ? await files.get(id) : null, request.ownerId);
     if (!file) return notFound(reply);
     const now = nowSeconds();
     const items = await links.listByFile(id);
@@ -81,14 +91,25 @@ export const linkRoutes: FastifyPluginAsync<Options> = async (app, { config, fil
 
   app.delete<{ Params: { id: string; linkId: string } }>('/files/:id/links/:linkId', async (request, reply) => {
     const { id, linkId } = request.params;
-    const deleted = isFileId(id) && isLinkId(linkId) && (await links.delete(id, linkId));
+    const file = owned(isFileId(id) && isLinkId(linkId) ? await files.get(id) : null, request.ownerId);
+    const deleted = file !== null && (await links.delete(id, linkId));
     if (!deleted) return notFound(reply, 'Link não encontrado');
     return reply.code(204).send();
+  });
+};
+
+// O link público, sem API key. O limite é por IP.
+export const publicLinkRoutes: FastifyPluginAsync<PublicOptions> = async (app, { config, files, links, storage, limiter }) => {
+  const downloadLimit = rateLimit(limiter, {
+    name: 'downloads',
+    limit: config.RATE_LIMIT_DOWNLOADS_PER_MINUTE,
+    windowSeconds: 60,
+    subject: (request) => request.ip,
   });
 
   // O link público. Não entrega o arquivo: confere o token, conta o download e
   // redireciona pra uma URL assinada do S3 que vale só alguns segundos.
-  app.get<{ Params: { token: string } }>('/s/:token', async (request, reply) => {
+  app.get<{ Params: { token: string } }>('/s/:token', { onRequest: downloadLimit }, async (request, reply) => {
     void reply.header('cache-control', 'no-store').header('referrer-policy', 'no-referrer');
 
     const { token } = request.params;

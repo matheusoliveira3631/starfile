@@ -21,6 +21,14 @@ const schema = z.object({
   // Vida da URL assinada do S3 depois do redirect. Curta de propósito: quem tem o link
   // pede outra, e uma URL vazada em log ou histórico morre logo.
   DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
+
+  // Atrás do API Gateway o IP real vem no X-Forwarded-For. Rodando direto, deixe false,
+  // senão qualquer um escolhe o próprio IP mandando o header e fura o rate limit.
+  TRUST_PROXY: z.stringbool().default(false),
+  RATE_LIMIT_API_PER_MINUTE: z.coerce.number().int().positive().default(300),
+  RATE_LIMIT_UPLOADS_PER_HOUR: z.coerce.number().int().positive().default(50),
+  RATE_LIMIT_DOWNLOADS_PER_MINUTE: z.coerce.number().int().positive().default(60),
+  RATE_LIMIT_AUTH_FAILURES_PER_MINUTE: z.coerce.number().int().positive().default(20),
 });
 
 export type Config = z.infer<typeof schema>;

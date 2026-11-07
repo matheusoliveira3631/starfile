@@ -5,6 +5,8 @@ import { allowedTypes, extensionMatches, sanitizeFilename } from '../files/file-
 import { isFileId, newFileId, pendingKey } from '../files/ids.js';
 import type { FileRepository } from '../files/repository.js';
 import type { FileStorage } from '../files/storage.js';
+import { rateLimit } from '../rate-limit/hook.js';
+import type { RateLimiter } from '../rate-limit/limiter.js';
 
 // Registro pendente que nunca recebeu o arquivo expira em 1 dia.
 const PENDING_TTL_SECONDS = 24 * 60 * 60;
@@ -19,12 +21,19 @@ interface Options {
   config: Config;
   files: FileRepository;
   storage: FileStorage;
+  limiter: RateLimiter;
 }
 
-export const uploadRoutes: FastifyPluginAsync<Options> = async (app, { config, files, storage }) => {
+export const uploadRoutes: FastifyPluginAsync<Options> = async (app, { config, files, storage, limiter }) => {
   const maxBytes = maxUploadBytes(config);
+  const uploadLimit = rateLimit(limiter, {
+    name: 'uploads',
+    limit: config.RATE_LIMIT_UPLOADS_PER_HOUR,
+    windowSeconds: 3600,
+    subject: (request) => request.ownerId,
+  });
 
-  app.post('/uploads', async (request, reply) => {
+  app.post('/uploads', { onRequest: uploadLimit }, async (request, reply) => {
     const parsed = uploadBody.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'invalid_body', message: z.prettifyError(parsed.error) });
@@ -47,6 +56,7 @@ export const uploadRoutes: FastifyPluginAsync<Options> = async (app, { config, f
     const now = Date.now();
     await files.create({
       id,
+      ownerId: request.ownerId,
       filename,
       contentType: contentType.data,
       size,
@@ -72,7 +82,8 @@ export const uploadRoutes: FastifyPluginAsync<Options> = async (app, { config, f
   app.get<{ Params: { id: string } }>('/files/:id', async (request, reply) => {
     const { id } = request.params;
     const record = isFileId(id) ? await files.get(id) : null;
-    if (!record) {
+    // Arquivo de outra pessoa responde igual a arquivo inexistente: 404, não 403.
+    if (record?.ownerId !== request.ownerId) {
       return reply.code(404).send({ error: 'not_found', message: 'Arquivo não encontrado' });
     }
     return { ...record, expiresAt: new Date(record.expiresAt * 1000).toISOString() };
