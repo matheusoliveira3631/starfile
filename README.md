@@ -1,8 +1,23 @@
 # Starfile
 
-Compartilhamento de arquivos com links temporários. Os arquivos vão direto do navegador pro S3, a API roda em Lambda e os metadados ficam no DynamoDB.
+Compartilhamento de arquivos com links temporários. Os arquivos vão direto do cliente pro S3, a API roda em Lambda e os metadados ficam no DynamoDB.
 
-> Reescrita em andamento. A versão antiga, em Flask, está na tag [`v1-flask`](https://github.com/matheusoliveira3631/starfile/tree/v1-flask).
+```mermaid
+flowchart LR
+    C[Cliente] -->|1. POST /uploads| GW[API Gateway]
+    GW --> API[Lambda: API]
+    API -->|registro pending| DB[(DynamoDB)]
+    API -->|formulário assinado| C
+    C -->|2. arquivo| S3[(S3)]
+    S3 -->|3. ObjectCreated em pending/| V[Lambda: validação]
+    V -->|confere magic bytes| S3
+    V -->|ready ou rejected| DB
+    V -.->|falhou 3 vezes| DLQ[SQS DLQ + alarme]
+    P[Quem recebeu o link] -->|4. GET /s/:token| GW
+    API -->|302 pra URL de 60s| P
+```
+
+> A versão antiga, em Flask, está na tag [`v1-flask`](https://github.com/matheusoliveira3631/starfile/tree/v1-flask).
 
 ## Como funciona o upload
 
@@ -44,7 +59,7 @@ As respostas trazem `RateLimit-Limit`, `RateLimit-Remaining` e `RateLimit-Reset`
 
 O contador fica no DynamoDB, não em memória. Na Lambda cada instância tem a sua memória, então um limite em memória vira um limite por instância: com 50 instâncias quentes, o limite real seria 50 vezes maior. É janela fixa: um item por janela, incrementado de forma atômica e apagado pelo TTL. A desvantagem conhecida é que alguém pode gastar o limite no fim de uma janela e de novo no começo da próxima. Pra esse uso tudo bem. O API Gateway também tem throttling próprio, que entra na infra como primeira barreira.
 
-Atrás do API Gateway, `TRUST_PROXY=true` faz o IP vir do `X-Forwarded-For`. Rodando direto, deixe `false`, senão qualquer um troca de IP mandando esse header.
+O IP usado nos limites, na Lambda, é o `sourceIp` que o próprio API Gateway informa, e o cliente não tem como forjar. `TRUST_PROXY=true` só serve se o servidor rodar atrás de um load balancer ou proxy reverso, quando o IP real vem no `X-Forwarded-For`. Fora desse caso, deixe `false`, senão qualquer um troca de IP mandando esse header.
 
 ## Links de compartilhamento
 
@@ -70,6 +85,28 @@ Outros detalhes:
 - O link nunca dura mais que o arquivo, que fica guardado por `FILE_RETENTION_DAYS` (padrão 30). O TTL do DynamoDB pode levar até dois dias pra apagar um item vencido, então a API confere a data em toda leitura e não depende dele.
 - O download sai sempre como `attachment`, então o navegador baixa em vez de abrir o arquivo.
 
+## Infraestrutura
+
+Tudo em CDK (`infra/`), numa stack só:
+
+- **S3** privado, com acesso público bloqueado, HTTPS obrigatório e criptografia. Lifecycle apaga `pending/` em 1 dia e `files/` depois da retenção.
+- **DynamoDB** em uma tabela, sob demanda, com TTL, índice por hash do token e point-in-time recovery.
+- **Duas Lambdas** em Node 22 ARM: a API (Fastify via `@fastify/aws-lambda`) e a validação, disparada pelo S3. Se a validação falhar 3 vezes, o evento vai pra uma fila SQS com alarme.
+- **API Gateway HTTP** com throttling (50 req/s, pico de 100) e log de acesso sem header nenhum.
+
+As permissões são escritas à mão, sem `grantReadWrite`. A API só pode gravar em `pending/` e ler de `files/`, e não apaga nada. A validação só lê e apaga em `pending/` e grava em `files/`. Ela também tem `s3:ListBucket`, porque sem ele o S3 responde 403 em vez de 404 pra um objeto que não existe, e um evento repetido viraria erro de permissão.
+
+O SDK da AWS vai dentro do bundle. O CDK por padrão deixa ele de fora, contando com o do runtime, mas o runtime não traz todos os pacotes e muda de versão sem aviso.
+
+```bash
+npx cdk bootstrap                        # uma vez por conta/região
+npx cdk deploy -c stage=dev
+npx cdk deploy -c stage=prod -c alarmEmail=voce@exemplo.com
+npm run api-key -- create voce "notebook" # com BUCKET_NAME e TABLE_NAME dos outputs
+```
+
+Contexto aceito: `stage` (fora de `prod`, bucket e tabela são apagados junto com a stack), `allowedOrigins` (lista separada por vírgula, liga o CORS pra upload pelo navegador), `fileRetentionDays` e `alarmEmail`.
+
 ## Rodando localmente
 
 Precisa de Node 22.
@@ -89,3 +126,5 @@ npm run dev        # http://localhost:3000/health
 | `npm run lint` | ESLint |
 | `npm run typecheck` | checagem de tipos |
 | `npm run build` | compila para `dist/` |
+| `npm run synth` | gera o template do CloudFormation |
+| `npm run api-key` | cria e revoga API keys |
