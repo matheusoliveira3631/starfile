@@ -4,6 +4,15 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+
+  AWS_REGION: z.string().min(1).default('us-east-1'),
+  // Só para desenvolvimento e testes com LocalStack. Em produção fica vazio.
+  AWS_ENDPOINT_URL: z.url().optional(),
+  BUCKET_NAME: z.string().min(1),
+  TABLE_NAME: z.string().min(1),
+
+  MAX_UPLOAD_MB: z.coerce.number().int().positive().max(5120).default(25),
+  UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(300),
 });
 
 export type Config = z.infer<typeof schema>;
@@ -15,3 +24,5 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   }
   return parsed.data;
 }
+
+export const maxUploadBytes = (config: Config) => config.MAX_UPLOAD_MB * 1024 * 1024;

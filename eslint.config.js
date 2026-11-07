@@ -15,6 +15,7 @@ export default tseslint.config(
     rules: {
       // Plugins e handlers do Fastify são async por contrato, mesmo sem await.
       '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_', argsIgnorePattern: '^_' }],
     },
   },
   {

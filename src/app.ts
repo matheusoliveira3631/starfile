@@ -1,14 +1,33 @@
 import { randomUUID } from 'node:crypto';
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
+import { createAwsClients } from './aws.js';
 import { loadConfig, type Config } from './config.js';
+import { DynamoFileRepository, type FileRepository } from './files/repository.js';
+import { S3FileStorage, type FileStorage } from './files/storage.js';
 import { loggerOptions } from './logger.js';
 import { healthRoutes } from './routes/health.js';
+import { uploadRoutes } from './routes/uploads.js';
 
-export function buildApp(config: Config = loadConfig()): FastifyInstance {
+export interface AppDeps {
+  files: FileRepository;
+  storage: FileStorage;
+}
+
+export function defaultDeps(config: Config): AppDeps {
+  const { s3, dynamo } = createAwsClients(config);
+  return {
+    files: new DynamoFileRepository(dynamo, config.TABLE_NAME),
+    storage: new S3FileStorage(s3, config.BUCKET_NAME),
+  };
+}
+
+export function buildApp(config: Config = loadConfig(), deps: AppDeps = defaultDeps(config)): FastifyInstance {
   const app = Fastify({
     logger: loggerOptions(config),
     genReqId: () => randomUUID(),
     requestIdHeader: false,
+    // O arquivo nunca passa pela API, só o JSON pedindo a URL de upload.
+    bodyLimit: 16 * 1024,
   });
 
   app.addHook('onSend', async (request, reply) => {
@@ -29,6 +48,7 @@ export function buildApp(config: Config = loadConfig()): FastifyInstance {
   });
 
   void app.register(healthRoutes);
+  void app.register(uploadRoutes, { config, ...deps });
 
   return app;
 }
