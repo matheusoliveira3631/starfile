@@ -1,4 +1,6 @@
+import type { ApiKeyRecord, ApiKeyRepository } from '../src/auth/repository.js';
 import type { FileRecord, FileRepository } from '../src/files/repository.js';
+import type { RateLimiter } from '../src/rate-limit/limiter.js';
 import type { CreateUploadInput, DownloadUrlInput, FileStorage } from '../src/files/storage.js';
 import type { LinkRecord, LinkRepository } from '../src/links/repository.js';
 
@@ -99,5 +101,35 @@ export class InMemoryLinks implements LinkRepository {
     if (link.maxDownloads !== undefined && link.downloads >= link.maxDownloads) return false;
     link.downloads += 1;
     return true;
+  }
+}
+
+export class InMemoryApiKeys implements ApiKeyRepository {
+  readonly records = new Map<string, ApiKeyRecord>();
+
+  async create(record: ApiKeyRecord) {
+    this.records.set(record.keyHash, { ...record });
+  }
+
+  async findByHash(keyHash: string) {
+    const record = this.records.get(keyHash);
+    return record ? { ...record } : null;
+  }
+
+  async delete(keyHash: string) {
+    return this.records.delete(keyHash);
+  }
+}
+
+export class InMemoryRateLimiter implements RateLimiter {
+  readonly hits = new Map<string, number>();
+
+  async hit(key: string, limit: number, windowSeconds: number) {
+    const now = Math.floor(Date.now() / 1000);
+    const window = Math.floor(now / windowSeconds);
+    const bucket = `${key}#${String(window)}`;
+    const hits = (this.hits.get(bucket) ?? 0) + 1;
+    this.hits.set(bucket, hits);
+    return { allowed: hits <= limit, limit, remaining: Math.max(0, limit - hits), resetAt: (window + 1) * windowSeconds };
   }
 }

@@ -4,12 +4,12 @@ import type { FileRecord } from '../src/files/repository.js';
 import { testApp } from './helpers.js';
 
 const HOUR = 3600;
-let ctx: ReturnType<typeof testApp>;
+let ctx: Awaited<ReturnType<typeof testApp>>;
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-01-10T12:00:00Z'));
-  ctx = testApp();
+  ctx = await testApp();
 });
 
 afterEach(async () => {
@@ -23,6 +23,7 @@ async function storedFile(overrides: Partial<FileRecord> = {}) {
   const id = newFileId();
   await ctx.files.create({
     id,
+    ownerId: 'alice',
     filename: 'relatório final.pdf',
     contentType: 'application/pdf',
     size: 100,
@@ -41,10 +42,11 @@ interface CreatedLink {
   maxDownloads: number | null;
 }
 
-async function createLink(fileId: string, body?: object) {
+async function createLink(fileId: string, body?: object, owner: 'alice' | 'bob' = 'alice') {
   const res = await ctx.app.inject({
     method: 'POST',
     url: `/files/${fileId}/links`,
+    headers: ctx.as(owner),
     ...(body && { payload: body }),
   });
   return { res, link: res.json<CreatedLink>() };
@@ -148,13 +150,37 @@ describe('GET /s/:token', () => {
   });
 });
 
+describe('dono do arquivo', () => {
+  it('outra pessoa não cria, não lista e não revoga links', async () => {
+    const id = await storedFile();
+    const { link } = await createLink(id);
+
+    expect((await createLink(id, undefined, 'bob')).res.statusCode).toBe(404);
+    const list = await ctx.app.inject({ method: 'GET', url: `/files/${id}/links`, headers: ctx.as('bob') });
+    expect(list.statusCode).toBe(404);
+    const del = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/files/${id}/links/${link.linkId}`,
+      headers: ctx.as('bob'),
+    });
+    expect(del.statusCode).toBe(404);
+    expect((await open(link.url)).statusCode).toBe(302);
+  });
+
+  it('o link público funciona sem API key', async () => {
+    const id = await storedFile();
+    const { link } = await createLink(id);
+    expect((await open(link.url)).statusCode).toBe(302);
+  });
+});
+
 describe('listar e revogar', () => {
   it('lista os links sem token nem hash', async () => {
     const id = await storedFile();
     await createLink(id);
     await createLink(id, { maxDownloads: 1 });
 
-    const res = await ctx.app.inject({ method: 'GET', url: `/files/${id}/links` });
+    const res = await ctx.app.inject({ method: 'GET', url: `/files/${id}/links`, headers: ctx.as('alice') });
     const { links } = res.json<{ links: Record<string, unknown>[] }>();
     expect(links).toHaveLength(2);
     for (const link of links) {
@@ -167,7 +193,11 @@ describe('listar e revogar', () => {
     const id = await storedFile();
     const { link } = await createLink(id);
 
-    const del = await ctx.app.inject({ method: 'DELETE', url: `/files/${id}/links/${link.linkId}` });
+    const del = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/files/${id}/links/${link.linkId}`,
+      headers: ctx.as('alice'),
+    });
     expect(del.statusCode).toBe(204);
     expect((await open(link.url)).statusCode).toBe(404);
   });
@@ -177,7 +207,11 @@ describe('listar e revogar', () => {
     const b = await storedFile();
     const { link } = await createLink(a);
 
-    const del = await ctx.app.inject({ method: 'DELETE', url: `/files/${b}/links/${link.linkId}` });
+    const del = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/files/${b}/links/${link.linkId}`,
+      headers: ctx.as('alice'),
+    });
     expect(del.statusCode).toBe(404);
     expect((await open(link.url)).statusCode).toBe(302);
   });

@@ -1,13 +1,14 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { testApp } from './helpers.js';
 
-let ctx = testApp();
-afterEach(async () => {
-  await ctx.app.close();
-  ctx = testApp();
+let ctx: Awaited<ReturnType<typeof testApp>>;
+beforeEach(async () => {
+  ctx = await testApp();
 });
+afterEach(() => ctx.app.close());
 
-const post = (body: unknown) => ctx.app.inject({ method: 'POST', url: '/uploads', payload: body as object });
+const post = (body: unknown) =>
+  ctx.app.inject({ method: 'POST', url: '/uploads', payload: body as object, headers: ctx.as('alice') });
 
 describe('POST /uploads', () => {
   it('registra o arquivo como pendente e devolve o formulário de upload', async () => {
@@ -24,7 +25,12 @@ describe('POST /uploads', () => {
       size: 1234,
       expiresIn: 300,
     });
-    expect(ctx.files.records.get(body.fileId)).toMatchObject({ status: 'pending', filename: 'foto.png', size: 1234 });
+    expect(ctx.files.records.get(body.fileId)).toMatchObject({
+      status: 'pending',
+      ownerId: 'alice',
+      filename: 'foto.png',
+      size: 1234,
+    });
   });
 
   it('gera ids diferentes a cada upload', async () => {
@@ -47,7 +53,7 @@ describe('POST /uploads', () => {
 
   it('respeita MAX_UPLOAD_MB', async () => {
     await ctx.app.close();
-    ctx = testApp({ MAX_UPLOAD_MB: '1' });
+    ctx = await testApp({ MAX_UPLOAD_MB: '1' });
     const res = await post({ filename: 'a.zip', contentType: 'application/zip', size: 2 * 1024 * 1024 });
     expect(res.statusCode).toBe(413);
   });
@@ -87,14 +93,21 @@ describe('GET /files/:id', () => {
     const created = await post({ filename: 'a.pdf', contentType: 'application/pdf', size: 100 });
     const { fileId } = created.json<{ fileId: string }>();
 
-    const res = await ctx.app.inject({ method: 'GET', url: `/files/${fileId}` });
+    const res = await ctx.app.inject({ method: 'GET', url: `/files/${fileId}`, headers: ctx.as('alice') });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({ id: fileId, status: 'pending', filename: 'a.pdf' });
     expect(res.json<{ expiresAt: string }>().expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it.each(['naoexiste000000000000000', '123', '..%2F..%2Fetc'])('responde 404 para %s', async (id) => {
-    const res = await ctx.app.inject({ method: 'GET', url: `/files/${id}` });
+    const res = await ctx.app.inject({ method: 'GET', url: `/files/${id}`, headers: ctx.as('alice') });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('responde 404 pra arquivo de outra pessoa', async () => {
+    const created = await post({ filename: 'a.pdf', contentType: 'application/pdf', size: 100 });
+    const { fileId } = created.json<{ fileId: string }>();
+    const res = await ctx.app.inject({ method: 'GET', url: `/files/${fileId}`, headers: ctx.as('bob') });
     expect(res.statusCode).toBe(404);
   });
 });

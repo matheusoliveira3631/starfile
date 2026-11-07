@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "api-key": "tsx --env-file-if-exists=.env scripts/api-key.ts"
   },
   "repository": {
     "type": "git",
