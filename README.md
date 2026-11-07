@@ -1,5 +1,7 @@
 # Starfile
 
+[![CI](https://github.com/matheusoliveira3631/starfile/actions/workflows/ci.yml/badge.svg)](https://github.com/matheusoliveira3631/starfile/actions/workflows/ci.yml)
+
 Compartilhamento de arquivos com links temporários. Os arquivos vão direto do cliente pro S3, a API roda em Lambda e os metadados ficam no DynamoDB.
 
 ```mermaid
@@ -107,14 +109,33 @@ npm run api-key -- create voce "notebook" # com BUCKET_NAME e TABLE_NAME dos out
 
 Contexto aceito: `stage` (fora de `prod`, bucket e tabela são apagados junto com a stack), `allowedOrigins` (lista separada por vírgula, liga o CORS pra upload pelo navegador), `fileRetentionDays` e `alarmEmail`.
 
+## CI e deploy
+
+Em todo PR e em todo push na `master`, o [CI](.github/workflows/ci.yml) roda lint, typecheck, testes de unidade, `npm audit` e `cdk synth`, que já gera os bundles das Lambdas. Num job separado roda os testes de integração contra o LocalStack, com a checagem de assinatura do S3 ligada. Sem ela, o LocalStack aceita URL vencida ou adulterada e os testes de expiração passam sem provar nada.
+
+Quando o CI passa na `master`, o [deploy](.github/workflows/deploy.yml) faz `cdk deploy` em produção sem nenhuma chave da AWS guardada no GitHub. O job pede um token OIDC ao GitHub e troca por credenciais temporárias de um papel IAM, que só aceita tokens deste repositório no environment `production`. O papel não mexe em recurso nenhum diretamente, só assume os papéis criados pelo `cdk bootstrap`.
+
+As actions são fixadas por SHA do commit, não por tag. Tag pode ser movida pra apontar pra outro código; commit não. O Dependabot abre PR semanal pra atualizar actions e dependências.
+
+Pra ligar o deploy (uma vez só):
+
+```bash
+npx cdk bootstrap
+npx cdk deploy StarfileGithubOidc     # cria o provedor OIDC e o papel; anote o DeployRoleArn
+```
+
+No GitHub: crie o environment `production` (Settings → Environments, de preferência exigindo aprovação) e, em Settings → Variables, a variável `AWS_DEPLOY_ROLE_ARN` com o ARN do papel. `AWS_REGION` e `ALARM_EMAIL` são opcionais. Enquanto `AWS_DEPLOY_ROLE_ARN` não existir, o deploy é pulado.
+
 ## Rodando localmente
 
-Precisa de Node 22.
+Precisa de Node 22 e Docker (pro LocalStack, que emula S3 e DynamoDB).
 
 ```bash
 npm install
 cp .env.example .env
-npm run dev        # http://localhost:3000/health
+docker compose up -d
+npm run dev                # http://localhost:3000/health
+npm run test:integration   # testes contra o LocalStack
 ```
 
 ## Scripts
@@ -122,7 +143,8 @@ npm run dev        # http://localhost:3000/health
 | Comando | O que faz |
 | --- | --- |
 | `npm run dev` | servidor local com reload |
-| `npm test` | testes (Vitest) |
+| `npm test` | testes de unidade |
+| `npm run test:integration` | testes contra o LocalStack (`docker compose up -d` antes) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | checagem de tipos |
 | `npm run build` | compila para `dist/` |

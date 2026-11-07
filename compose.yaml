@@ -1,0 +1,10 @@
+# S3 e DynamoDB locais pra desenvolvimento e testes de integração.
+services:
+  localstack:
+    image: localstack/localstack:4
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,dynamodb
+      # Sem isso o LocalStack aceita URL assinada vencida ou adulterada.
+      S3_SKIP_SIGNATURE_VALIDATION: "0"

@@ -1,6 +1,7 @@
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { describe, expect, it } from 'vitest';
+import { GithubOidcStack } from '../infra/github-oidc.js';
 import { StarfileStack, type StarfileStackProps } from '../infra/stack.js';
 
 function synth(overrides: Partial<StarfileStackProps> = {}) {
@@ -150,5 +151,44 @@ describe('API', () => {
     template.resourceCountIs('AWS::CloudWatch::Alarm', 1);
     template.resourceCountIs('AWS::SNS::Topic', 0);
     synth({ alarmEmail: 'eu@exemplo.com' }).resourceCountIs('AWS::SNS::Subscription', 1);
+  });
+});
+
+describe('papel de deploy do GitHub', () => {
+  const app = new App();
+  const template = Template.fromStack(
+    new GithubOidcStack(app, 'Oidc', { repository: 'dono/repo', environment: 'production' }),
+  );
+
+  it('só aceita token do repositório e do environment certos', () => {
+    template.hasResourceProperties('AWS::IAM::Role', {
+      AssumeRolePolicyDocument: {
+        Statement: [
+          Match.objectLike({
+            Action: 'sts:AssumeRoleWithWebIdentity',
+            Condition: {
+              StringEquals: {
+                'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
+                'token.actions.githubusercontent.com:sub': 'repo:dono/repo:environment:production',
+              },
+            },
+          }),
+        ],
+      },
+    });
+  });
+
+  it('só pode assumir os papéis do cdk bootstrap', () => {
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: [
+          {
+            Action: 'sts:AssumeRole',
+            Effect: 'Allow',
+            Resource: { 'Fn::Join': ['', ['arn:aws:iam::', { Ref: 'AWS::AccountId' }, ':role/cdk-*']] },
+          },
+        ],
+      },
+    });
   });
 });

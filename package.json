@@ -13,11 +13,12 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
     "api-key": "tsx --env-file-if-exists=.env scripts/api-key.ts",
     "cdk": "cdk",
-    "synth": "cdk synth --quiet"
+    "synth": "cdk synth --quiet",
+    "test:integration": "vitest run --project integration"
   },
   "repository": {
     "type": "git",
