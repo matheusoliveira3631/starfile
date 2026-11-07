@@ -15,6 +15,37 @@ O arquivo nunca passa pela API. O cliente pede uma URL, manda o arquivo direto p
 
 Tipos aceitos: PNG, JPEG, GIF, WebP, PDF, ZIP e texto (UTF-8). Limite padrão de 25 MB (`MAX_UPLOAD_MB`).
 
+## Autenticação
+
+As rotas de upload e de gerenciar links pedem uma API key no header `Authorization: Bearer sf_...`. O link público (`/s/:token`) e o `/health` não pedem.
+
+```bash
+npm run api-key -- create alice "notebook"   # mostra a chave uma vez só
+npm run api-key -- revoke sf_...
+```
+
+- A chave tem 256 bits aleatórios. No banco fica só o SHA-256. Pra senha seria argon2, porque senha tem pouca entropia e cai em dicionário. Pra uma chave aleatória desse tamanho não existe dicionário, e um hash lento só gastaria CPU em toda requisição.
+- O prefixo `sf_` deixa fácil achar a chave com secret scanning se alguém commitar sem querer.
+- Cada arquivo tem um dono. Arquivo de outra pessoa responde 404, igual a um que não existe, pra não confirmar que o id é válido.
+- Chave revogada para de funcionar na requisição seguinte: a busca é uma leitura consistente na tabela principal.
+
+Por que API key e não login com senha: é uma API pra ser usada por script e CLI, não por um formulário de login. Com chave não tem senha pra guardar, nem fluxo de recuperação ou refresh token. Se um dia tiver um front, o caminho é o Cognito emitir o token, não a API guardar senha.
+
+## Rate limit
+
+| Regra | Limite padrão | Por |
+| --- | --- | --- |
+| Rotas autenticadas | 300 por minuto | dono da chave |
+| `POST /uploads` | 50 por hora | dono da chave |
+| `GET /s/:token` | 60 por minuto | IP |
+| Falha de autenticação | 20 por minuto | IP |
+
+As respostas trazem `RateLimit-Limit`, `RateLimit-Remaining` e `RateLimit-Reset`, e o 429 traz `Retry-After`.
+
+O contador fica no DynamoDB, não em memória. Na Lambda cada instância tem a sua memória, então um limite em memória vira um limite por instância: com 50 instâncias quentes, o limite real seria 50 vezes maior. É janela fixa: um item por janela, incrementado de forma atômica e apagado pelo TTL. A desvantagem conhecida é que alguém pode gastar o limite no fim de uma janela e de novo no começo da próxima. Pra esse uso tudo bem. O API Gateway também tem throttling próprio, que entra na infra como primeira barreira.
+
+Atrás do API Gateway, `TRUST_PROXY=true` faz o IP vir do `X-Forwarded-For`. Rodando direto, deixe `false`, senão qualquer um troca de IP mandando esse header.
+
 ## Links de compartilhamento
 
 Arquivo pronto ganha links com validade e, se quiser, limite de downloads.
