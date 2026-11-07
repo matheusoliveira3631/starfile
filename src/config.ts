@@ -22,8 +22,9 @@ const schema = z.object({
   // pede outra, e uma URL vazada em log ou histórico morre logo.
   DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
 
-  // Atrás do API Gateway o IP real vem no X-Forwarded-For. Rodando direto, deixe false,
-  // senão qualquer um escolhe o próprio IP mandando o header e fura o rate limit.
+  // Só pra rodar o servidor atrás de um load balancer ou proxy reverso: aí o IP real vem no
+  // X-Forwarded-For. Na Lambda e rodando direto, deixe false, senão qualquer um escolhe o
+  // próprio IP mandando o header e fura o rate limit.
   TRUST_PROXY: z.stringbool().default(false),
   RATE_LIMIT_API_PER_MINUTE: z.coerce.number().int().positive().default(300),
   RATE_LIMIT_UPLOADS_PER_HOUR: z.coerce.number().int().positive().default(50),
