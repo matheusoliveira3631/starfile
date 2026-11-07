@@ -6,6 +6,7 @@ export type FileStatus = 'pending' | 'ready' | 'rejected';
 
 export interface FileRecord {
   id: string;
+  ownerId: string;
   filename: string;
   contentType: AllowedType;
   size: number;
