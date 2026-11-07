@@ -1,0 +1,53 @@
+name: Deploy
+
+# Roda depois que o CI passa na master. Sem chave da AWS guardada no GitHub:
+# o job troca o token OIDC do GitHub por credenciais temporárias de um papel IAM.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy em produção
+    # Só se o CI passou, e só se o papel já foi configurado (vars.AWS_DEPLOY_ROLE_ARN).
+    if: >-
+      vars.AWS_DEPLOY_ROLE_ARN != '' &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # O papel IAM só aceita tokens deste environment. Dá pra exigir aprovação manual nele.
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # No workflow_run, o commit que passou no CI, não o que estiver na master agora.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      - name: cdk deploy
+        run: >-
+          npx cdk deploy Starfile-prod
+          -c stage=prod
+          ${{ vars.ALARM_EMAIL && format('-c alarmEmail={0}', vars.ALARM_EMAIL) || '' }}
+          --require-approval never
